@@ -8,26 +8,27 @@ import axios, {
 import { AppError, HttpError, ParseError } from "../errors/AppError";
 import { AsyncResult, left, right } from "../result/Result";
 import { IHttpRequest } from "../types/HttpRequest";
+import { IHttpResponse } from "../types/HttpResponse";
 
 export interface IHttpService {
   get<T>(
     request: IHttpRequest,
-    parser?: (data: unknown) => T
+    parser?: (data: IHttpResponse<T>) => T
   ): AsyncResult<AppError, T>;
 
   post<T>(
     request: IHttpRequest,
-    parser?: (data: unknown) => T
+    parser?: (data: IHttpResponse<T>) => T
   ): AsyncResult<AppError, T>;
 
   patch<T>(
     request: IHttpRequest,
-    parser?: (data: unknown) => T
+    parser?: (data: IHttpResponse<T>) => T
   ): AsyncResult<AppError, T>;
 
   delete<T>(
     request: IHttpRequest,
-    parser?: (data: unknown) => T
+    parser?: (data: IHttpResponse<T>) => T
   ): AsyncResult<AppError, T>;
 
   setHeader(header: AxiosRequestHeaders): void;
@@ -43,47 +44,51 @@ export class HttpService implements IHttpService {
         "Content-Type": "application/json",
       },
     });
+
+    this._initializeRequestInterceptor();
+    this._initializeResponseInterceptor();
   }
+
   async get<T>(
     { url, config }: IHttpRequest,
-    parser?: (data: unknown) => T
+    parser?: (data: IHttpResponse<T>) => T
   ): AsyncResult<AppError, T> {
     try {
       const response = await this.axiosService.get<T>(url, config);
-      return right(this._safeParse(response.data, parser));
+      return right(this._safeParse(response, parser));
     } catch (error) {
       return left(this._toAppError(error));
     }
   }
   async post<T>(
     { url, data, config }: IHttpRequest,
-    parser?: (data: unknown) => T
+    parser?: (data: IHttpResponse<T>) => T
   ): AsyncResult<AppError, T> {
     try {
       const response = await this.axiosService.post<T>(url, data, config);
-      return right(this._safeParse(response.data, parser));
+      return right(this._safeParse(response, parser));
     } catch (error) {
       return left(this._toAppError(error));
     }
   }
   async patch<T>(
     { url, data, config }: IHttpRequest,
-    parser?: (data: unknown) => T
+    parser?: (data: IHttpResponse<T>) => T
   ): AsyncResult<AppError, T> {
     try {
       const response = await this.axiosService.patch<T>(url, data, config);
-      return right(this._safeParse(response.data, parser));
+      return right(this._safeParse(response, parser));
     } catch (error) {
       return left(this._toAppError(error));
     }
   }
   async delete<T>(
     { url, config }: IHttpRequest,
-    parser?: (data: unknown) => T
+    parser?: (data: IHttpResponse<T>) => T
   ): AsyncResult<AppError, T> {
     try {
       const response = await this.axiosService.delete<T>(url, config);
-      return right(this._safeParse(response.data, parser));
+      return right(this._safeParse(response, parser));
     } catch (error) {
       return left(this._toAppError(error));
     }
@@ -121,10 +126,13 @@ export class HttpService implements IHttpService {
     return (error as AxiosError).isAxiosError !== undefined;
   }
 
-  private _safeParse<T>(data: unknown, parser?: (data: unknown) => T): T {
-    if (!parser) return data as T;
+  private _safeParse<T>(
+    data: AxiosResponse,
+    parser?: (data: IHttpResponse<T>) => T
+  ): T {
+    if (!parser) return (data.data as IHttpResponse<T>).data;
     try {
-      return parser(data);
+      return parser(data.data);
     } catch (e: unknown) {
       if (e instanceof Error) {
         throw new ParseError(e.message);
