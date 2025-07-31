@@ -14,23 +14,103 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+# 🧱 Clean Architecture – Next.js Template
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+A modular, scalable folder structure for building Next.js apps with Clean Architecture principles.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 📁 Folder Structure
 
-To learn more about Next.js, take a look at the following resources:
+```
+/src
+├── domain/                  ← Pure business logic (no Next.js, no HTTP)
+│   ├── entities/            ← e.g. Todo, User
+│   ├── use-cases/           ← e.g. createTodo.ts, deleteUser.ts
+│   └── interfaces/          ← e.g. TodoRepository (abstract interface)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+├── infrastructure/          ← Implements interfaces (DB, API clients, etc.)
+│   └── repositories/
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+├── application/             ← Services, coordinators, adapters
+│   ├── services/
+│   ├── hooks/
+│   └── utils/
 
-## Deploy on Vercel
+├── features/                ← Only contains UI + page-specific logic
+│   ├── todos/
+│   │   ├── components/
+│   │   └── pages/
+│   ├── auth/
+│   │   └── pages/
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+├── shared/                  ← UI components, global types, etc.
+├── pages/                   ← API routes and Next.js pages (if not using App Router)
+└── config/                  ← Env, constants, DI setup
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### `🧩 How Layers Interact/`
+---
+```
+[ UI (features/pages/components) ]
+         ↓
+[ Application (services/hooks) ]
+         ↓
+[ Domain (use-cases/entities/interfaces) ]
+         ↓
+[ Infrastructure (implementations of interfaces) ]
+```
+
+## 🔄 Layers Overview
+
+### `domain/`
+- Pure business rules
+- Entities, use-cases, interfaces
+
+### `infrastructure/`
+- External tech (DBs, APIs)
+- Implements domain interfaces
+
+### `application/`
+- Services and hooks
+- Bridges domain and UI
+
+### `features/`
+- UI per domain module
+- Presentation logic only
+
+### `app/`
+- Next.js routing layer
+- API routes and pages
+
+### `shared/`
+- UI components, utils, types
+- Reused across features
+
+### `config/`
+- Environment and setup files
+
+---
+
+## ✅ Usage Examples
+
+| Goal                       | Add Here                                     |
+|----------------------------|----------------------------------------------|
+| CreateTodo logic          | `domain/use-cases/`, `application/services/` |
+| Login form                | `features/auth/components/`                  |
+| Prisma repo               | `infrastructure/repositories/`              |
+| New route                 | `app/your-page/page.tsx`                     |
+| Shared type               | `shared/types/`                              |
+
+---
+
+## 🏁 Getting Started
+
+```bash
+npm install
+npm run dev
+```
+
+---
+
+Made with ❤️ using Clean Code Principles.
